@@ -1,64 +1,97 @@
 package main
 
 import (
-	"path/filepath"
-	"os"
-	"strings"
+	"flag"
 	"fmt"
-	"github.com/golang/glog"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/PuerkitoBio/goquery"
 	"github.com/axgle/mahonia"
-	"io/ioutil"
+	"github.com/golang/glog"
 )
-var (
-	index = 1
-	dir = "unkown"
-)
-func main() {
-	novel_name := "圣墟"
-	dir = novel_name
-	os.Mkdir(dir, 0755)
 
-	start_url :="http://www.biqiuge.com/book/4772/2940354.html"
-	next_url := &start_url
-	for {
-		next_url = downloadPage(next_url)
-		if next_url == nil{
-			break
-		}
+var (
+	dir       = "unkown"
+	novelName = flag.String("name", "", "novel name")
+)
+
+const (
+	SEARCH_SITE = `http://www.biquge.com.tw`
+	SEARCH_URL  = SEARCH_SITE + `/modules/article/soshu.php?searchkey=%s`
+)
+
+func getNovelIndex(name string) {
+	realSearchURL := fmt.Sprintf(SEARCH_URL, ConvertUTF8ToGBK(name))
+	resp, err := http.Get(realSearchURL)
+	if err != nil {
+		glog.Errorln(err)
 	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		glog.Errorln(err)
+	}
+	uBody := ConvertGBKToUTF8(string(body))
+	//fmt.Println(uBody)
+
+	// parse href by goquery
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(uBody))
+	if err != nil {
+		glog.Fatal(err)
+	}
+	var wg sync.WaitGroup
+	doc.Find("#list").Find("dd").Each(func(index int, s *goquery.Selection) {
+		chapter := s.Children()
+		fmt.Print(chapter.Text())
+		href, ok := chapter.Attr("href")
+		if ok {
+			url := SEARCH_SITE + href
+			fmt.Println(url)
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				downloadPage(&url, index)
+			}()
+		} else {
+			fmt.Println("no link find")
+		}
+	})
+	wg.Wait()
 }
-func downloadPage(url *string) (next *string){
-	doc,err := goquery.NewDocument(*url)
+func main() {
+	flag.Parse()
+	if len(*novelName) == 0 {
+		flag.Usage()
+		os.Exit(0)
+	}
+	os.Mkdir("novel", 0755)
+	dir = filepath.Join("novel", *novelName)
+	os.Mkdir(dir, 0755)
+	getNovelIndex(*novelName)
+}
+func downloadPage(url *string, index int) (next *string) {
+	doc, err := goquery.NewDocument(*url)
 	if err != nil {
 		glog.Error(err)
-		return nil
+		time.Sleep(time.Millisecond * 500)
+		return downloadPage(url, index)
 	}
 	dec := mahonia.NewDecoder("GB18030")
 	title := doc.Find(".bookname").Find("h1").Text()
 	title = dec.ConvertString(title)
-	fmt.Println(title)
-	doc.Find("#content").Each(func(i int,s *goquery.Selection){
+	doc.Find("#content").Each(func(i int, s *goquery.Selection) {
 		str := dec.ConvertString(s.Text())
-		str = strings.Replace(str, "聽"," ",-1)
+		str = strings.Replace(str, "聽", " ", -1)
 		nt := fmt.Sprintf("%4d %s.txt", index, title)
-		path := filepath.Join(dir,nt)
-		index++
+		fmt.Println(nt)
+		path := filepath.Join(dir, nt)
 		ioutil.WriteFile(path, []byte(str), 0644)
-		//fmt.Println(str)
-	})
-	doc.Find(".bottem").Each(func(i int,s *goquery.Selection){
-		s.Find("a").Each(func(i int, c *goquery.Selection){
-			text := dec.ConvertString(c.Text())
-			if text == "下一章" {
-				href,ok := c.Attr("href")
-				if ok {
-					fmt.Println("下一章： ", href)
-					next = &href
-					return
-				}
-			}
-		})
 	})
 	return
 }
