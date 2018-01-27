@@ -14,13 +14,24 @@ const (
 	TOOLDIR = "tools"
 )
 
+func NotFoundHandler(w http.ResponseWriter, req *http.Request) {
+	if req.URL.Path == "/" {
+		http.Redirect(w, req, "/www/index.html", http.StatusFound)
+	} else {
+		http.Redirect(w, req, "/www/404.html", http.StatusFound)
+	}
+
+}
 func main() {
 	flag.Parse()
-	http.Handle("/", http.FileServer(http.Dir("www/")))
+	http.Handle("/www/", http.FileServer(http.Dir(".")))
+	http.HandleFunc("/", NotFoundHandler)
 	http.HandleFunc("/api/search", func(w http.ResponseWriter, req *http.Request) {
 		if req.Method != "POST" {
 			w.WriteHeader(404)
+			http.Redirect(w, req, "/404.html", 404)
 			fmt.Println("bad requst")
+			return
 		}
 		err := req.ParseForm()
 		if err != nil {
