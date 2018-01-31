@@ -3,16 +3,31 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os/exec"
 	"path/filepath"
+	"strings"
+	"text/template"
+	"time"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/axgle/mahonia"
 
 	"github.com/golang/glog"
 )
 
 const (
-	TOOLDIR = "tools"
+	SEARCH_SITE = `http://www.biquge.com.tw`
+	SEARCH_URL  = SEARCH_SITE + `/modules/article/soshu.php?searchkey=%s`
+	TOOLDIR     = "tools"
 )
+
+type SearchResult struct {
+	Name   string
+	Author string
+	Op     string
+}
 
 func NotFoundHandler(w http.ResponseWriter, req *http.Request) {
 	if req.URL.Path == "/" {
@@ -40,8 +55,22 @@ func main() {
 
 		novelName := req.FormValue("name")
 		fmt.Println("novel name: ", novelName)
-		w.Write([]byte("starting get " + novelName))
-		go crawlNovel(novelName)
+		tmpl, err := template.ParseFiles("www/search_result.html")
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		result := make([]SearchResult, 0)
+		r1 := SearchResult{"圣墟", "辰东", "订阅"}
+		r2 := SearchResult{"圣墟", "辰东", "订阅"}
+		result = append(result, r1)
+		result = append(result, r2)
+		err = tmpl.Execute(w, result)
+		if err != nil {
+			fmt.Println(err)
+		}
+		// go crawlNovel(novelName)
 
 	})
 	err := http.ListenAndServe("0.0.0.0:80", nil)
@@ -50,6 +79,45 @@ func main() {
 	}
 }
 
+func download(url string) *string {
+	resp, err := http.Get(url)
+	if err != nil {
+		glog.Errorln(err)
+		time.Sleep(500 * time.Microsecond)
+		return download(url)
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		glog.Errorln(err)
+		return nil
+	}
+	str := ConvertGBKToUTF8(string(body))
+	return &str
+}
+func ConvertGBKToUTF8(str string) string {
+	dec := mahonia.NewDecoder("GBK")
+	return dec.ConvertString(str)
+}
+
+func ConvertUTF8ToGBK(str string) string {
+	enc := mahonia.NewEncoder("GBK")
+	return enc.ConvertString(str)
+}
+
+func searchNovel(name string) {
+	realSearchURL := fmt.Sprintf(SEARCH_URL, ConvertUTF8ToGBK(name))
+	uBody := download(realSearchURL)
+
+	// parse href by goquery
+	reader := strings.NewReader(*uBody)
+	doc, err := goquery.NewDocumentFromReader(reader)
+	if err != nil {
+		glog.Fatal(err)
+	}
+	doc.Find("#list").Find("dd").Each(func(index int, s *goquery.Selection) {
+	})
+}
 func crawlNovel(name string) {
 	crawlerPath := filepath.Join(TOOLDIR, "crawl_novel")
 	cmd := exec.Command(crawlerPath, "-name="+name)
