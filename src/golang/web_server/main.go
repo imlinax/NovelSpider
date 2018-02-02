@@ -23,7 +23,7 @@ const (
 	TOOLDIR     = "tools"
 )
 
-type SearchResult struct {
+type NovelInfo struct {
 	Name   string
 	Author string
 	Op     string
@@ -61,11 +61,7 @@ func main() {
 			return
 		}
 
-		result := make([]SearchResult, 0)
-		r1 := SearchResult{"圣墟", "辰东", "订阅"}
-		r2 := SearchResult{"圣墟", "辰东", "订阅"}
-		result = append(result, r1)
-		result = append(result, r2)
+		result := searchNovel(novelName)
 		err = tmpl.Execute(w, result)
 		if err != nil {
 			fmt.Println(err)
@@ -105,7 +101,7 @@ func ConvertUTF8ToGBK(str string) string {
 	return enc.ConvertString(str)
 }
 
-func searchNovel(name string) {
+func searchNovel(name string) []NovelInfo {
 	realSearchURL := fmt.Sprintf(SEARCH_URL, ConvertUTF8ToGBK(name))
 	uBody := download(realSearchURL)
 
@@ -115,7 +111,23 @@ func searchNovel(name string) {
 	if err != nil {
 		glog.Fatal(err)
 	}
-	doc.Find("#list").Find("dd").Each(func(index int, s *goquery.Selection) {
+
+	novelList := make([]NovelInfo,0)
+	doc.Find("#nr").Each(func(index int, s *goquery.Selection) {
+		var ni NovelInfo
+		s.Find("td").Each(func(td_index int, td_s *goquery.Selection){
+			switch td_index {
+			case 1:
+				ni.Author = td_s.Text()
+			case 2:
+				ni.Name = td_s.Text()
+			case 3:
+				ni.Name = td_s.Text()
+			}
+
+		})
+
+		novelList = append(novelList, ni)
 	})
 }
 func crawlNovel(name string) {
