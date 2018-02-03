@@ -69,7 +69,7 @@ func main() {
 		// go crawlNovel(novelName)
 
 	})
-	err := http.ListenAndServe("0.0.0.0:80", nil)
+	err := http.ListenAndServe("0.0.0.0:8081", nil)
 	if err != nil {
 		glog.Error(err)
 	}
@@ -110,25 +110,26 @@ func searchNovel(name string) []NovelInfo {
 	doc, err := goquery.NewDocumentFromReader(reader)
 	if err != nil {
 		glog.Fatal(err)
+		return nil
 	}
 
-	novelList := make([]NovelInfo,0)
+	novelList := make([]NovelInfo, 0)
 	doc.Find("#nr").Each(func(index int, s *goquery.Selection) {
-		var ni NovelInfo
-		s.Find("td").Each(func(td_index int, td_s *goquery.Selection){
+		ni := NovelInfo{
+			Op: "订阅"}
+		s.Find("td").Each(func(td_index int, td_s *goquery.Selection) {
 			switch td_index {
-			case 1:
-				ni.Author = td_s.Text()
+			case 0:
+				ni.Name = td_s.Text()
 			case 2:
-				ni.Name = td_s.Text()
-			case 3:
-				ni.Name = td_s.Text()
+				ni.Author = td_s.Text()
 			}
 
 		})
 
 		novelList = append(novelList, ni)
 	})
+	return novelList
 }
 func crawlNovel(name string) {
 	crawlerPath := filepath.Join(TOOLDIR, "crawl_novel")
