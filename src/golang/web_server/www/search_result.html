@@ -14,13 +14,18 @@
         <tr>
             <th>小说</th>
             <th>作者</th>
+            <th>最新章节</th>
             <th>操作</th>
         </tr>
         {{range .}}
         <tr>
             <td>{{.Name}}</td>
             <td>{{.Author}}</td>
-            <td>{{.Op}}</td>
+            <td>{{.LatestChapter}}</td>
+            <td>
+                <a href={{.DownloadLink}}>下载</a>
+                <a href={{.SubScribeLink}}>订阅</a>
+            </td>
         </tr>
         {{end}}
     </table>

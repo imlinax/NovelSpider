@@ -24,9 +24,11 @@ const (
 )
 
 type NovelInfo struct {
-	Name   string
-	Author string
-	Op     string
+	Name          string
+	Author        string
+	LatestChapter string
+	DownloadLink  string
+	SubScribeLink string
 }
 
 func NotFoundHandler(w http.ResponseWriter, req *http.Request) {
@@ -115,12 +117,13 @@ func searchNovel(name string) []NovelInfo {
 
 	novelList := make([]NovelInfo, 0)
 	doc.Find("#nr").Each(func(index int, s *goquery.Selection) {
-		ni := NovelInfo{
-			Op: "订阅"}
+		ni := NovelInfo{}
 		s.Find("td").Each(func(td_index int, td_s *goquery.Selection) {
 			switch td_index {
 			case 0:
 				ni.Name = td_s.Text()
+			case 1:
+				ni.LatestChapter = td_s.Text()
 			case 2:
 				ni.Author = td_s.Text()
 			}
