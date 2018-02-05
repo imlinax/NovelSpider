@@ -27,6 +27,7 @@ type NovelInfo struct {
 	Name          string
 	Author        string
 	LatestChapter string
+	EntryLink     string
 	DownloadLink  string
 	SubScribeLink string
 }
@@ -122,6 +123,8 @@ func searchNovel(name string) []NovelInfo {
 			switch td_index {
 			case 0:
 				ni.Name = td_s.Text()
+				ni.EntryLink, _ = td_s.Find("a").Attr("href")
+				fmt.Println(ni.EntryLink)
 			case 1:
 				ni.LatestChapter = td_s.Text()
 			case 2:
