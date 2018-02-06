@@ -40,38 +40,39 @@ func NotFoundHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 }
+func searchHandler(w http.ResponseWriter, req *http.Request) {
+	if req.Method != "POST" {
+		w.WriteHeader(404)
+		http.Redirect(w, req, "/404.html", 404)
+		fmt.Println("bad requst")
+		return
+	}
+	err := req.ParseForm()
+	if err != nil {
+		glog.Info(err)
+	}
+
+	novelName := req.FormValue("name")
+	fmt.Println("novel name: ", novelName)
+	tmpl, err := template.ParseFiles("www/search_result.html")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	result := searchNovel(novelName)
+	err = tmpl.Execute(w, result)
+	if err != nil {
+		fmt.Println(err)
+	}
+	// go crawlNovel(novelName)
+
+}
 func main() {
 	flag.Parse()
 	http.Handle("/www/", http.FileServer(http.Dir(".")))
 	http.HandleFunc("/", NotFoundHandler)
-	http.HandleFunc("/api/search", func(w http.ResponseWriter, req *http.Request) {
-		if req.Method != "POST" {
-			w.WriteHeader(404)
-			http.Redirect(w, req, "/404.html", 404)
-			fmt.Println("bad requst")
-			return
-		}
-		err := req.ParseForm()
-		if err != nil {
-			glog.Info(err)
-		}
-
-		novelName := req.FormValue("name")
-		fmt.Println("novel name: ", novelName)
-		tmpl, err := template.ParseFiles("www/search_result.html")
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		result := searchNovel(novelName)
-		err = tmpl.Execute(w, result)
-		if err != nil {
-			fmt.Println(err)
-		}
-		// go crawlNovel(novelName)
-
-	})
+	http.HandleFunc("/api/search", searchHandler)
 	err := http.ListenAndServe("0.0.0.0:8081", nil)
 	if err != nil {
 		glog.Error(err)
@@ -124,7 +125,6 @@ func searchNovel(name string) []NovelInfo {
 			case 0:
 				ni.Name = td_s.Text()
 				ni.EntryLink, _ = td_s.Find("a").Attr("href")
-				fmt.Println(ni.EntryLink)
 			case 1:
 				ni.LatestChapter = td_s.Text()
 			case 2:
