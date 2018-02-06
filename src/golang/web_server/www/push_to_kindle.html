@@ -9,16 +9,22 @@
     <script src="main.js"></script>
 </head>
 <body>
-    <form name="frm">
-        <input class='text' name='email' style='height:30px' align='center'/>
-        <input type="submit" id="submit"style="font-size:50px" value="推送" />
+    <form id="frm" align="center" action="/api/push" method="post" >
+        <label>邮箱</label>
+        <input class="text" name="email" id="email" style="height:30px" align="center"/>
+        <input type="hidden" name="entry" id="entry" value="">
+        <br>
+        <input type="submit" id="submit" style="font-size:large" value="推送到kindle" />
     </form>
 </body>
-<script type="text/script">
-    $(document).ready(function(){
-        $("p").click(function(){
-        $(this).hide();
-        });
-      });
+<script type="text/javascript">
+function GetQueryString(name){
+     var reg = new RegExp("(^|&)"+ name +"=([^&]*)(&|$)");
+     var r = window.location.search.substr(1).match(reg);
+     if(r!=null)return  unescape(r[2]); return null;
+}
+    window.onload= function(){
+        document.getElementById("entry").value=GetQueryString("link")
+      };
 </script>
 </html>

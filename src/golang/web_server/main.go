@@ -68,11 +68,28 @@ func searchHandler(w http.ResponseWriter, req *http.Request) {
 	// go crawlNovel(novelName)
 
 }
+func pushHandler(w http.ResponseWriter, req *http.Request) {
+	if req.Method != "POST" {
+		w.WriteHeader(404)
+		http.Redirect(w, req, "/404.html", 404)
+		fmt.Println("bad requst")
+		return
+	}
+	err := req.ParseForm()
+	if err != nil {
+		glog.Info(err)
+	}
+
+	email := req.FormValue("email")
+	entry := req.FormValue("entry")
+	fmt.Println(email, entry)
+}
 func main() {
 	flag.Parse()
 	http.Handle("/www/", http.FileServer(http.Dir(".")))
 	http.HandleFunc("/", NotFoundHandler)
 	http.HandleFunc("/api/search", searchHandler)
+	http.HandleFunc("/api/push", pushHandler)
 	err := http.ListenAndServe("0.0.0.0:8081", nil)
 	if err != nil {
 		glog.Error(err)
