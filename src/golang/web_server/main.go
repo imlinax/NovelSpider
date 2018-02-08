@@ -81,8 +81,10 @@ func pushHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	email := req.FormValue("email")
-	entry := req.FormValue("entry")
-	fmt.Println(email, entry)
+	name := req.FormValue("novel")
+	fmt.Fprint(w, `<h1>正在下载<< `, name, `>>,稍候将自动发送到您的kindle</h1>`)
+	fmt.Println(email, name)
+	go crawlNovel(name)
 }
 func main() {
 	flag.Parse()
@@ -161,5 +163,6 @@ func crawlNovel(name string) {
 	if err != nil {
 		glog.Error(err)
 	}
+	fmt.Println("下载完成: ", name)
 	glog.Info("下载完成: ", name)
 }

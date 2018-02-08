@@ -12,19 +12,47 @@
     <form id="frm" align="center" action="/api/push" method="post" >
         <label>邮箱</label>
         <input class="text" name="email" id="email" style="height:30px" align="center"/>
-        <input type="hidden" name="entry" id="entry" value="">
+        <input type="hidden" name="novel" id="novel" value="">
         <br>
         <input type="submit" id="submit" style="font-size:large" value="推送到kindle" />
     </form>
 </body>
 <script type="text/javascript">
-function GetQueryString(name){
-     var reg = new RegExp("(^|&)"+ name +"=([^&]*)(&|$)");
-     var r = window.location.search.substr(1).match(reg);
-     if(r!=null)return  unescape(r[2]); return null;
+
+
+
+function GetQueryString(para){
+    var url = window.location.href;
+
+    var obj = {};
+    var reg = /\?/;
+    if(url.match(reg)) {
+        //判断传入参数，以问号截取，问号后是参数
+        var chars = url.split('?')[1];
+
+        //再截&号
+        var arr = chars.split('&');
+
+        //获得截取后的数组为键值对字符串
+        for (var i = 0; i < arr.length; i++) {
+
+            //保守一点确定看是否为 name=value形式
+            var num = arr[i].indexOf("=");
+
+            if (num > 0) {
+                //拼接字符串
+                var name = arr[i].substring(0, num);
+                var value = arr[i].substr(num + 1);
+
+                //拼接对象，并转码
+                obj[decodeURIComponent(name)] = decodeURIComponent(value);
+            }
+        }
+    }
+    return obj[para]
 }
     window.onload= function(){
-        document.getElementById("entry").value=GetQueryString("link")
+        document.getElementById("novel").value=GetQueryString("name")
       };
 </script>
 </html>
