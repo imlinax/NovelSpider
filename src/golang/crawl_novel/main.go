@@ -74,7 +74,7 @@ func main() {
 	flag.Parse()
 	if len(*novelName) == 0 {
 		flag.Usage()
-		os.Exit(0)
+		os.Exit(1)
 	}
 	os.Mkdir("novel", 0755)
 	dir = filepath.Join("novel", *novelName)

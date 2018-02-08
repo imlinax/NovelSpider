@@ -165,4 +165,18 @@ func crawlNovel(name string) {
 	}
 	fmt.Println("下载完成: ", name)
 	glog.Info("下载完成: ", name)
+
+	ConvertTextToMobi(name)
+	fmt.Println("转换mobi完成")
+}
+
+func ConvertTextToMobi(name string) {
+	novelPath := filepath.Join("novel", name)
+	tool := filepath.Join(TOOLDIR, "create_epub.py")
+
+	cmd := exec.Command("python", tool, "--dir="+novelPath)
+	err := cmd.Run()
+	if err != nil {
+		glog.Error(err)
+	}
 }
