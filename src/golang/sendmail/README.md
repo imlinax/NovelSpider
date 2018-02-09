@@ -1,0 +1,1 @@
+sendmail -file "test.mobi" -recipients "xxx@xxx.com"
