@@ -84,7 +84,7 @@ func pushHandler(w http.ResponseWriter, req *http.Request) {
 	name := req.FormValue("novel")
 	fmt.Fprint(w, `<h1>正在下载<< `, name, `>>,稍候将自动发送到您的kindle</h1>`)
 	fmt.Println(email, name)
-	go crawlNovel(name)
+	go crawlNovel(name, email)
 }
 func main() {
 	flag.Parse()
@@ -156,7 +156,7 @@ func searchNovel(name string) []NovelInfo {
 	})
 	return novelList
 }
-func crawlNovel(name string) {
+func crawlNovel(name, email string) {
 	crawlerPath := filepath.Join(TOOLDIR, "crawl_novel")
 	cmd := exec.Command(crawlerPath, "-name="+name)
 	err := cmd.Run()
@@ -166,17 +166,44 @@ func crawlNovel(name string) {
 	fmt.Println("下载完成: ", name)
 	glog.Info("下载完成: ", name)
 
-	ConvertTextToMobi(name)
-	fmt.Println("转换mobi完成")
-}
+	ConvertTextToEpub(name)
+	fmt.Println("转换epub完成")
 
-func ConvertTextToMobi(name string) {
+	ConvertEpubToMobi(name)
+	fmt.Println("转换mobi完成")
+
+	SendMail(name, email)
+	fmt.Println("发送邮件完成")
+}
+func ConvertEpubToMobi(name string) {
+	tool := filepath.Join(TOOLDIR, "kindlegen")
+
+	cmd := exec.Command(tool, name+".epub", "-o", name+".mobi")
+	err := cmd.Run()
+	if err != nil {
+		glog.Error(err)
+	}
+
+}
+func ConvertTextToEpub(name string) {
 	novelPath := filepath.Join("novel", name)
 	tool := filepath.Join(TOOLDIR, "create_epub.py")
 
 	cmd := exec.Command("python", tool, "--dir="+novelPath)
 	err := cmd.Run()
 	if err != nil {
+		glog.Error(err)
+	}
+}
+
+func SendMail(name, email string) {
+	mobiPath := name + ".mobi"
+	tool := filepath.Join(TOOLDIR, "sendmail")
+
+	cmd := exec.Command(tool, "-file", mobiPath, "-recipients", email)
+	err := cmd.Run()
+	if err != nil {
+		fmt.Println(err)
 		glog.Error(err)
 	}
 }
