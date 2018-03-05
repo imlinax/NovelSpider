@@ -32,6 +32,11 @@ type NovelInfo struct {
 	SubScribeLink string
 }
 
+type Chapter struct {
+	Name string
+	URL  string
+}
+
 func NotFoundHandler(w http.ResponseWriter, req *http.Request) {
 	if req.URL.Path == "/" {
 		http.Redirect(w, req, "/www/index.html", http.StatusFound)
@@ -68,6 +73,39 @@ func searchHandler(w http.ResponseWriter, req *http.Request) {
 	// go crawlNovel(novelName)
 
 }
+
+func readChapterOnlineHandler(w http.ResponseWriter, req *http.Request) {
+	chURL := req.URL.Query().Get("url")
+	uBody := download(chURL)
+	reader := strings.NewReader(*uBody)
+	doc, err := goquery.NewDocumentFromReader(reader)
+	if err != nil {
+		glog.Errorln(err)
+		return
+	}
+
+	doc.Find("#content").Each(func(i int, s *goquery.Selection) {
+		str := s.Text()
+		w.Write([]byte(str))
+	})
+
+}
+func readOnlineHandler(w http.ResponseWriter, req *http.Request) {
+	entryURL := req.URL.Query().Get("url")
+	chapterList := getAllChapterLink(entryURL)
+
+	tmpl, err := template.ParseFiles("www/read_online.html")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	err = tmpl.Execute(w, chapterList)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+}
 func pushHandler(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "POST" {
 		w.WriteHeader(404)
@@ -90,6 +128,8 @@ func main() {
 	flag.Parse()
 	http.Handle("/www/", http.FileServer(http.Dir(".")))
 	http.HandleFunc("/", NotFoundHandler)
+	http.HandleFunc("/api/read_online", readOnlineHandler)
+	http.HandleFunc("/api/readChapterOnline", readChapterOnlineHandler)
 	http.HandleFunc("/api/search", searchHandler)
 	http.HandleFunc("/api/push", pushHandler)
 	err := http.ListenAndServe("0.0.0.0:8081", nil)
@@ -124,6 +164,34 @@ func ConvertUTF8ToGBK(str string) string {
 	return enc.ConvertString(str)
 }
 
+func getAllChapterLink(entry string) []Chapter {
+	uBody := download(entry)
+
+	reader := strings.NewReader(*uBody)
+	doc, err := goquery.NewDocumentFromReader(reader)
+	if err != nil {
+		glog.Errorln(err)
+		return nil
+	}
+
+	chapterList := make([]Chapter, 0)
+	doc.Find("#list").Find("dd").Each(func(index int, s *goquery.Selection) {
+		chapter := s.Children()
+		name := chapter.Text()
+		href, ok := chapter.Attr("href")
+		if ok {
+			url := SEARCH_SITE + href
+			var ch Chapter
+			ch.Name = name
+			ch.URL = url
+			chapterList = append(chapterList, ch)
+		} else {
+			fmt.Println("no link find")
+		}
+	})
+	return chapterList
+
+}
 func searchNovel(name string) []NovelInfo {
 	realSearchURL := fmt.Sprintf(SEARCH_URL, ConvertUTF8ToGBK(name))
 	uBody := download(realSearchURL)
