@@ -103,7 +103,6 @@ func readChapterOnlineHandler(w http.ResponseWriter, req *http.Request) {
 			if ok {
 				chapter.NextPage = SEARCH_SITE + url
 			}
-			fmt.Println("下一章", chapter.NextPage)
 		}
 	})
 	tmpl, err := template.ParseFiles("www/read_chapter_online.html")
