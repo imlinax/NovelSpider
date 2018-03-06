@@ -1,24 +1,18 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>小说搜索</title>
+    <title>{{.Title}}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" media="screen" href="main.css" />
 </head>
-
-<body>
-    <table  align="left">
-        {{range .}}
-        <tr>
-            <td>
-                <a href=readChapterOnline?url={{.URL}}>{{.Name}}</a>
-            </td>
-        </tr>
-        {{end}}
-    </table>
+<body >
+    <h1 align="center">{{.Title}}</h1>
+    {{.Content}}    
+    <br>
+    <div align="center" >
+        <a href=readChapterOnline?url={{.NextPage}}>下一页</a>
+    </div>
 </body>
-
 </html>

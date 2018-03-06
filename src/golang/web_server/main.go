@@ -84,11 +84,38 @@ func readChapterOnlineHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	type Chapter struct {
+		Title, Content, NextPage string
+	}
+
+	var chapter Chapter
+	doc.Find("h1").Each(func(i int, s *goquery.Selection) {
+		chapter.Title = s.Text()
+	})
 	doc.Find("#content").Each(func(i int, s *goquery.Selection) {
-		str := s.Text()
-		w.Write([]byte(str))
+		chapter.Content, _ = s.Html()
 	})
 
+	doc.Find(".bottem2").Find("a").Each(func(i int, s *goquery.Selection) {
+		text := s.Text()
+		if text == "下一章" {
+			url, ok := s.Attr("href")
+			if ok {
+				chapter.NextPage = SEARCH_SITE + url
+			}
+			fmt.Println("下一章", chapter.NextPage)
+		}
+	})
+	tmpl, err := template.ParseFiles("www/read_chapter_online.html")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	err = tmpl.Execute(w, chapter)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 func readOnlineHandler(w http.ResponseWriter, req *http.Request) {
 	entryURL := req.URL.Query().Get("url")
